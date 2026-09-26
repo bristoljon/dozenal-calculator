@@ -3,7 +3,10 @@ import styled from 'styled-components';
 // Below this width the calculator fills the screen instead of floating as a card.
 export const mobile = '@media (max-width: 500px)';
 
+const FOLD = '40px';
+
 export const Container = styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -13,6 +16,15 @@ export const Container = styled.div`
   padding: 20px 20px 15px;
   background-color: yellow;
   box-shadow: 0px 5px 0px 0px #cccc00;
+  /* Cut away the top-right corner, which Fold draws folded over. The extra
+     10px below keeps the bottom shadow. */
+  clip-path: polygon(
+    0 0,
+    calc(100% - ${FOLD}) 0,
+    100% ${FOLD},
+    100% calc(100% + 10px),
+    0 calc(100% + 10px)
+  );
 
   ${mobile} {
     max-width: none;
@@ -26,6 +38,34 @@ export const Container = styled.div`
       max(16px, env(safe-area-inset-left));
     border-radius: 0;
     box-shadow: none;
+  }
+`;
+
+// The folded-down corner of the card, linking to the project page.
+export const Fold = styled.a`
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  width: ${FOLD};
+  height: ${FOLD};
+  padding: 0 0 4px 7px;
+  background: linear-gradient(to bottom left, transparent 50%, #e6e600 50%);
+  border-bottom-left-radius: 6px;
+  filter: drop-shadow(-2px 2px 2px rgba(0, 0, 0, 0.25));
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 14px;
+  font-weight: bold;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+
+  &:hover,
+  &:focus-visible {
+    background: linear-gradient(to bottom left, transparent 50%, #cccc00 50%);
+    color: black;
   }
 `;
 

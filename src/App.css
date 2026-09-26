@@ -4,11 +4,17 @@
   box-sizing:border-box;
   -moz-user-select:none;
   -webkit-user-select:none;
-  font-family: monospace;
+  /* Noto Sans Symbols only covers ↊ ↋ (see index.html), so everything else
+     is monospace. It has to come first: Chrome ignores later fallbacks
+     inside buttons. */
+  font-family: 'Noto Sans Symbols', monospace;
   border-radius: 5px;
 }
 
 html {
+  /* Browsers shrink the default size for a bare "monospace" to 13px; the
+     font list above opts out of that, so pin it to keep sizes unchanged. */
+  font-size: 13px;
   height: 100%;
   background: white;
   background: radial-gradient(circle, #fff 20%, #ccc);

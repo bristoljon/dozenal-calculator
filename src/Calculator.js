@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
 
-import { Container, Keyboard, Display, Repeat } from './Calculator.style';
+import { Container, Keyboard, Display, Repeat, Fold } from './Calculator.style';
 import Button from './Button';
+import SymbolPicker, { useDigitSymbols } from './SymbolPicker';
 import { add, subtract, multiply, divide, parse, toDigits } from './rational';
 
 const opMap = {
@@ -11,18 +12,23 @@ const opMap = {
   '*': multiply,
 };
 
+const PROJECT_URL = 'https://bristoljon.uk/project/dozenal';
+
 const isOperator = (token) => token && token.op !== undefined;
 
+// Digits are always `a` and `b` internally; this swaps in the chosen symbols.
+const withSymbols = (str, symbols) => str.replace(/[ab]/g, (digit) => symbols[digit]);
+
 // Renders a computed value, overlining any recurring digits.
-function Value({ value, base }) {
+function Value({ value, base, symbols }) {
   const { negative, int, frac, repeat, approx } = toDigits(value, base);
   return (
     <>
       {negative && '-'}
-      {int}
+      {withSymbols(int, symbols)}
       {(frac || repeat) && '.'}
-      {frac}
-      {repeat && <Repeat>{repeat}</Repeat>}
+      {withSymbols(frac, symbols)}
+      {repeat && <Repeat>{withSymbols(repeat, symbols)}</Repeat>}
       {approx && '…'}
     </>
   );
@@ -34,6 +40,10 @@ function Calculator() {
   // `text` is what the user is typing, or null for a computed result.
   const [tokens, setTokens] = useState([]);
   const [error, setError] = useState(null);
+  const [symbols, setSymbol] = useDigitSymbols();
+  // Which digit's symbol is being chosen, if any.
+  const [picking, setPicking] = useState(null);
+  const closePicker = useCallback(() => setPicking(null), []);
 
   const handleDigit = useCallback(
     (value) => {
@@ -103,39 +113,48 @@ function Calculator() {
   );
 
   return (
-    <Container>
-      <Display data-testid="display">
-        <span>
-          {error || tokens.map((token, i) => {
-            if (isOperator(token)) return token.op;
-            if (token.text !== null) return token.text;
-            return <Value key={i} value={token.value} base={base} />;
-          })}
-        </span>
-      </Display>
-      <Keyboard>
-        <Button  value="a" onClick={handleDigit} disabled={base !== 12}/>
-        <Button  value="b" onClick={handleDigit} disabled={base !== 12}/>
-        <Button  value="." onClick={handleDigit}/>
-        <Button type="operator" value="*" onClick={handleOperator}/>
-        <Button  value="7" onClick={handleDigit}/>
-        <Button  value="8" onClick={handleDigit}/>
-        <Button  value="9" onClick={handleDigit}/>
-        <Button type="operator" value="/" onClick={handleOperator}/>
-        <Button  value="4" onClick={handleDigit}/>
-        <Button  value="5" onClick={handleDigit}/>
-        <Button  value="6" onClick={handleDigit}/>
-        <Button type="operator" value="-" onClick={handleOperator}/>
-        <Button  value="1" onClick={handleDigit}/>
-        <Button  value="2" onClick={handleDigit}/>
-        <Button  value="3" onClick={handleDigit}/>
-        <Button type="operator" value="+" onClick={handleOperator}/>
-        <Button type="operator" value="C" onClick={handleClear}/>
-        <Button  value="0" onClick={handleDigit}/>
-        <Button type="mode" value={base === 12 ? 'DOZ' : 'DEC'} onClick={handlebase}/>
-        <Button type="operator" value="=" onClick={handleEquals}/>
-      </Keyboard>
-    </Container>
+    <>
+      <Container>
+        <Fold href={PROJECT_URL} title="About, comments and bug reports" aria-label="Project page: about, comments and bug reports">
+          ?
+        </Fold>
+        <Display data-testid="display">
+          <span>
+            {error || tokens.map((token, i) => {
+              if (isOperator(token)) return token.op;
+              if (token.text !== null) return withSymbols(token.text, symbols);
+              return <Value key={i} value={token.value} base={base} symbols={symbols} />;
+            })}
+          </span>
+        </Display>
+        <Keyboard>
+          <Button  value="a" label={symbols.a} onClick={handleDigit} onLongPress={setPicking} disabled={base !== 12}/>
+          <Button  value="b" label={symbols.b} onClick={handleDigit} onLongPress={setPicking} disabled={base !== 12}/>
+          <Button  value="." onClick={handleDigit}/>
+          <Button type="operator" value="*" onClick={handleOperator}/>
+          <Button  value="7" onClick={handleDigit}/>
+          <Button  value="8" onClick={handleDigit}/>
+          <Button  value="9" onClick={handleDigit}/>
+          <Button type="operator" value="/" onClick={handleOperator}/>
+          <Button  value="4" onClick={handleDigit}/>
+          <Button  value="5" onClick={handleDigit}/>
+          <Button  value="6" onClick={handleDigit}/>
+          <Button type="operator" value="-" onClick={handleOperator}/>
+          <Button  value="1" onClick={handleDigit}/>
+          <Button  value="2" onClick={handleDigit}/>
+          <Button  value="3" onClick={handleDigit}/>
+          <Button type="operator" value="+" onClick={handleOperator}/>
+          <Button type="operator" value="C" onClick={handleClear}/>
+          <Button  value="0" onClick={handleDigit}/>
+          <Button type="mode" value={base === 12 ? 'DOZ' : 'DEC'} onClick={handlebase}/>
+          <Button type="operator" value="=" onClick={handleEquals}/>
+        </Keyboard>
+      </Container>
+      {/* Outside Container, whose clipped corner would also clip the overlay. */}
+      {picking && (
+        <SymbolPicker digit={picking} symbols={symbols} onChoose={setSymbol} onClose={closePicker} />
+      )}
+    </>
   );
 }
 

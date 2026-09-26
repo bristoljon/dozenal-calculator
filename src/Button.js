@@ -1,6 +1,9 @@
+import { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 
 import { mobile } from './Calculator.style';
+
+const LONG_PRESS_MS = 500;
 
 const colorMap = {
   operator: 'pink',
@@ -21,6 +24,7 @@ const Btn = styled.button`
   justify-content: center;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 
   ${mobile} {
     font-size: clamp(1.75rem, 9vw, 2.75rem);
@@ -36,6 +40,49 @@ const Btn = styled.button`
   }
 `;
 
-export default function Button({ type, value, onClick, disabled }) {
-  return <Btn onClick={() => onClick(value)} type={type} disabled={disabled}>{value}</Btn>
+// `value` is passed to the handlers; `label` is what the key shows.
+export default function Button({ type, value, label = value, onClick, onLongPress, disabled }) {
+  const timer = useRef();
+  const longPressed = useRef(false);
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const longPress = () => {
+    clearTimeout(timer.current);
+    longPressed.current = true;
+    onLongPress(value);
+  };
+
+  const handlers = onLongPress && {
+    onPointerDown: () => {
+      longPressed.current = false;
+      timer.current = setTimeout(longPress, LONG_PRESS_MS);
+    },
+    onPointerUp: () => clearTimeout(timer.current),
+    onPointerLeave: () => clearTimeout(timer.current),
+    onPointerCancel: () => clearTimeout(timer.current),
+    // Right-click on desktop; also fired by some mobile browsers on long press.
+    onContextMenu: (e) => {
+      e.preventDefault();
+      if (!longPressed.current) longPress();
+    },
+  };
+
+  return (
+    <Btn
+      type={type}
+      disabled={disabled}
+      onClick={() => {
+        // The release that ends a long press shouldn't also type the key.
+        if (longPressed.current) {
+          longPressed.current = false;
+          return;
+        }
+        onClick(value);
+      }}
+      {...handlers}
+    >
+      {label}
+    </Btn>
+  );
 }
