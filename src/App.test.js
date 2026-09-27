@@ -115,3 +115,32 @@ describe('choosing symbols for ten and eleven', () => {
     expect(key('X')).toBeInTheDocument();
   });
 });
+
+describe('the last calculation', () => {
+  const history = () => screen.getByTestId('history');
+
+  test('is shown above its result', () => {
+    press('1', '/', '3', '=');
+    expect(history()).toHaveTextContent(/^1\/3=$/);
+    expect(display()).toHaveTextContent(/^0\.4$/);
+  });
+
+  test('stays while the next sum is typed, and is replaced by it', () => {
+    press('2', '+', '2', '=', '*', '3');
+    expect(history()).toHaveTextContent(/^2\+2=$/);
+    press('=');
+    expect(history()).toHaveTextContent(/^4\*3=$/);
+    expect(display()).toHaveTextContent(/^10$/);
+  });
+
+  test('follows a change of base', () => {
+    press('1', '0', '/', '4', '=');
+    press('DOZ');
+    expect(history()).toHaveTextContent(/^12\/4=$/);
+  });
+
+  test('is cleared by C', () => {
+    press('1', '+', '1', '=', 'C');
+    expect(history()).toHaveTextContent(/^$/);
+  });
+});

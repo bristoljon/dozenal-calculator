@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import { Container, Keyboard, Display, Repeat, Fold } from './Calculator.style';
+import { Container, Keyboard, Display, Line, History, Repeat, Fold } from './Calculator.style';
 import Button from './Button';
 import SymbolPicker, { useDigitSymbols } from './SymbolPicker';
 import { add, subtract, multiply, divide, parse, toDigits } from './rational';
@@ -34,12 +34,28 @@ function Value({ value, base, symbols }) {
   );
 }
 
+function Expression({ tokens, base, symbols }) {
+  return tokens.map((token, i) => {
+    if (isOperator(token)) return token.op;
+    if (token.text !== null) return withSymbols(token.text, symbols);
+    return <Value key={i} value={token.value} base={base} symbols={symbols} />;
+  });
+}
+
+// Drops typed text so numbers are shown from their exact values, which keeps
+// them right after a change of base.
+const asValues = (tokens) => tokens.map((token) => (
+  isOperator(token) ? token : { value: token.value, text: null }
+));
+
 function Calculator() {
   const [base, setBase] = useState(12);
   // Alternating numbers and operators. Numbers hold an exact rational `value`;
   // `text` is what the user is typing, or null for a computed result.
   const [tokens, setTokens] = useState([]);
   const [error, setError] = useState(null);
+  // The last calculation, shown above its result.
+  const [history, setHistory] = useState([]);
   const [symbols, setSymbol] = useDigitSymbols();
   // Which digit's symbol is being chosen, if any.
   const [picking, setPicking] = useState(null);
@@ -77,9 +93,7 @@ function Calculator() {
   const handlebase = useCallback(
     () => {
       // Values are exact, so switching base only changes how they're displayed.
-      setTokens((tokens) => tokens.map((token) => (
-        isOperator(token) ? token : { value: token.value, text: null }
-      )));
+      setTokens(asValues);
       setBase((base) => (base === 12 ? 10 : 12));
     },
     [],
@@ -89,6 +103,7 @@ function Calculator() {
     () => {
       const terms = isOperator(tokens[tokens.length - 1]) ? tokens.slice(0, -1) : tokens;
       if (!terms.length) return;
+      if (terms.length > 1) setHistory([...asValues(terms), { op: '=' }]);
 
       try {
         let sum = terms[0].value;
@@ -107,6 +122,7 @@ function Calculator() {
   const handleClear = useCallback(
     () => {
       setTokens([]);
+      setHistory([]);
       setError(null);
     },
     [],
@@ -118,14 +134,17 @@ function Calculator() {
         <Fold href={PROJECT_URL} title="About, comments and bug reports" aria-label="Project page: about, comments and bug reports">
           ?
         </Fold>
-        <Display data-testid="display">
-          <span>
-            {error || tokens.map((token, i) => {
-              if (isOperator(token)) return token.op;
-              if (token.text !== null) return withSymbols(token.text, symbols);
-              return <Value key={i} value={token.value} base={base} symbols={symbols} />;
-            })}
-          </span>
+        <Display>
+          <History data-testid="history">
+            <span>
+              <Expression tokens={history} base={base} symbols={symbols} />
+            </span>
+          </History>
+          <Line data-testid="display">
+            <span>
+              {error || <Expression tokens={tokens} base={base} symbols={symbols} />}
+            </span>
+          </Line>
         </Display>
         <Keyboard>
           <Button  value="a" label={symbols.a} onClick={handleDigit} onLongPress={setPicking} disabled={base !== 12}/>

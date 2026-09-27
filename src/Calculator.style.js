@@ -83,19 +83,32 @@ export const Keyboard = styled.div`
   }
 `;
 
-// row-reverse keeps the latest input in view when the equation overflows,
-// and lets the user scroll back to see the start.
 export const Display = styled.div`
   display: flex;
-  flex-direction: row-reverse;
-  align-items: flex-end;
+  flex-direction: column;
+  justify-content: flex-end;
   flex-shrink: 0;
-  height: 70px;
+  height: 112px;
   padding: 10px;
   box-shadow: inset 0px 5px 0px 0px #cccc00;
   background-color: #ffc560;
-
   font-size: 3em;
+
+  ${mobile} {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 110px;
+    font-size: clamp(2.5rem, 13vw, 4rem);
+  }
+`;
+
+// row-reverse keeps the latest input in view when a line overflows,
+// and lets the user scroll back to see the start.
+export const Line = styled.div`
+  display: flex;
+  flex-direction: row-reverse;
+  /* Tall enough that the overline on recurring digits isn't clipped. */
+  line-height: 1.4;
   white-space: nowrap;
   overflow-x: auto;
   overflow-y: hidden;
@@ -104,13 +117,15 @@ export const Display = styled.div`
   &::-webkit-scrollbar {
     display: none;
   }
+`;
 
-  ${mobile} {
-    flex: 1 1 0;
-    height: auto;
-    min-height: 90px;
-    font-size: clamp(2.5rem, 13vw, 4rem);
-  }
+// The calculation that gave the result below it. Always takes up its line
+// so the result doesn't jump when it appears.
+export const History = styled(Line)`
+  min-height: 1.4em;
+  margin-bottom: 0.3em;
+  font-size: 0.4em;
+  opacity: 0.6;
 `;
 
 export const Repeat = styled.span`
